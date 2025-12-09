@@ -19,15 +19,20 @@ export class SlotScene extends Phaser.Scene {
     create(): void {
         const { width, height } = this.cameras.main;
 
-        // Custom background image
+        // Custom background image with enhanced effects
         const bg = this.add.image(width / 2, height / 2, 'customBackground');
         bg.setDisplaySize(width, height);
 
-        // Optional: Add subtle overlay for better readability
-        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.2);
+        // Subtle vignette overlay  
+        const vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
 
         // Add ambient spotlight behind reels
         this.createAmbientLight();
+
+        // Add slot machine frame
+        const frame = this.add.image(width / 2, height / 2, 'slotFrame');
+        frame.setDisplaySize(width * 0.9, height * 0.9);
+        frame.setAlpha(0.3); // Semi-transparent overlay
 
         // Subtle scanlines for depth
         this.addSubtleScanlines();
@@ -43,10 +48,10 @@ export class SlotScene extends Phaser.Scene {
         // Result text
         this.resultText = this.add.text(width / 2, height / 2 + 200, '', {
             fontFamily: 'monospace',
-            fontSize: '20px',
+            fontSize: '24px',
             color: '#00ff88',
             stroke: '#000000',
-            strokeThickness: 4,
+            strokeThickness: 6,
         });
         this.resultText.setOrigin(0.5);
 
@@ -59,15 +64,25 @@ export class SlotScene extends Phaser.Scene {
     private createAmbientLight(): void {
         const { width, height } = this.cameras.main;
 
-        // Spotlight behind reel area
+        // Enhanced spotlight with multiple layers
         const spotlight = this.add.graphics();
         const centerX = width / 2;
         const centerY = height / 2 - 20;
 
-        for (let i = 0; i < 15; i++) {
-            const alpha = (15 - i) / 100;
+        // Outer glow
+        for (let i = 0; i < 20; i++) {
+            const alpha = (20 - i) / 250;
+            const colors = [0x4a00e0, 0x8e2de2, 0xffd700]; // Purple to gold gradient
+            const color = colors[Math.floor((i / 20) * colors.length)];
+            spotlight.fillStyle(color, alpha);
+            spotlight.fillEllipse(centerX, centerY, 350 + i * 20, 320 + i * 20);
+        }
+
+        // Inner bright spotlight
+        for (let i = 0; i < 10; i++) {
+            const alpha = (10 - i) / 80;
             spotlight.fillStyle(0xffffff, alpha);
-            spotlight.fillEllipse(centerX, centerY, 300 + i * 15, 280 + i * 15);
+            spotlight.fillEllipse(centerX, centerY, 280 + i * 10, 250 + i * 10);
         }
     }
 
@@ -360,6 +375,9 @@ export class SlotScene extends Phaser.Scene {
                             yoyo: true,
                             repeat: 3,
                         });
+
+                        // Emit particles from winning symbols
+                        this.createWinParticles(sprite.x, sprite.y);
                     }
                 });
             });
@@ -370,10 +388,15 @@ export class SlotScene extends Phaser.Scene {
                 this.resultText.setColor('#00ff88');
 
                 const betAmount = gameState.getState().slotConfig.spinCost;
+
+                // Create celebration particles based on win size
+                const { width, height } = this.cameras.main;
                 if (totalPayout >= betAmount * CONFIG.BIG_WIN_MULTIPLIER) {
                     this.sound.play('winJackpot');
+                    this.createBigWinExplosion(width / 2, height / 2);
                 } else if (totalPayout >= betAmount * 5) {
                     this.sound.play('winBig');
+                    this.createBigWinExplosion(width / 2, height / 2, 0.6);
                 } else if (totalPayout >= betAmount * 2) {
                     this.sound.play('winMedium');
                 } else {
@@ -427,5 +450,94 @@ export class SlotScene extends Phaser.Scene {
             graphics.fillStyle(0x000000, 0.05);
             graphics.fillRect(0, y, width, 1);
         }
+    }
+
+    private createWinParticles(x: number, y: number): void {
+        // Create sparkle particles from winning symbols
+        for (let i = 0; i < 8; i++) {
+            const particle = this.add.image(x, y, 'particle_sparkle');
+            particle.setScale(0.1 + Math.random() * 0.2);
+            particle.setAlpha(0.8);
+
+            const angle = (Math.PI * 2 * i) / 8;
+            const speed = 50 + Math.random() * 100;
+            const targetX = x + Math.cos(angle) * speed;
+            const targetY = y + Math.sin(angle) * speed;
+
+            this.tweens.add({
+                targets: particle,
+                x: targetX,
+                y: targetY,
+                alpha: 0,
+                scale: 0,
+                duration: 600 + Math.random() * 400,
+                ease: 'Cubic.easeOut',
+                onComplete: () => particle.destroy(),
+            });
+        }
+    }
+
+    private createBigWinExplosion(x: number, y: number, intensity: number = 1): void {
+        // Create massive particle explosion for big wins
+        const particleCount = Math.floor(50 * intensity);
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = this.add.image(x, y, 'particle_sparkle');
+            particle.setScale(0.2 + Math.random() * 0.4);
+            particle.setAlpha(0.9);
+            particle.setTint(Phaser.Display.Color.GetColor(
+                255,
+                150 + Math.random() * 105,
+                Math.random() * 100
+            ));
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 100 + Math.random() * 300;
+            const targetX = x + Math.cos(angle) * speed;
+            const targetY = y + Math.sin(angle) * speed;
+
+            this.tweens.add({
+                targets: particle,
+                x: targetX,
+                y: targetY,
+                alpha: 0,
+                scale: 0,
+                duration: 1000 + Math.random() * 1000,
+                ease: 'Cubic.easeOut',
+                onComplete: () => particle.destroy(),
+            });
+
+            // Add rotation
+            this.tweens.add({
+                targets: particle,
+                angle: 360 + Math.random() * 360,
+                duration: 1000 + Math.random() * 1000,
+                ease: 'Linear',
+            });
+        }
+
+        // Add screen shake for big wins
+        if (intensity >= 0.8) {
+            this.cameras.main.shake(300, 0.01);
+        }
+
+        // Create expanding ring effect
+        const ring = this.add.graphics();
+        ring.lineStyle(4, 0xffd700, 0.8);
+        ring.strokeCircle(x, y, 10);
+
+        this.tweens.add({
+            targets: ring,
+            alpha: 0,
+            duration: 800,
+            ease: 'Cubic.easeOut',
+            onUpdate: () => {
+                ring.clear();
+                const scale = 1 + (1 - ring.alpha) * 5;
+                ring.lineStyle(4 * (1 - (1 - ring.alpha) * 0.8), 0xffd700, ring.alpha);
+                ring.strokeCircle(x, y, 10 * scale);
+            },
+            onComplete: () => ring.destroy(),
+        });
     }
 }

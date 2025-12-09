@@ -45,23 +45,31 @@ export class BootScene extends Phaser.Scene {
 
         // === BACKGROUNDS ===
         this.load.image('casinoBackground', 'assets/main-back.jpg');
-        this.load.image('customBackground', 'assets/background.webp');
-        // === SLOT SYMBOLS ===
+        this.load.image('customBackground', 'assets/backgrounds/casino_bg.png');
+
+        // === NEW MODERN 3D SYMBOLS ===
+        this.load.image('symbol_lucky7', 'assets/new-symbols/lucky7.png');
+        this.load.image('symbol_diamond', 'assets/new-symbols/diamond.png');
+        this.load.image('symbol_coins', 'assets/new-symbols/coins.png');
+        this.load.image('symbol_bell', 'assets/new-symbols/bell.png');
+        this.load.image('symbol_cherries', 'assets/new-symbols/cherries.png');
+        this.load.image('symbol_clover', 'assets/new-symbols/clover.png');
+        this.load.image('symbol_heart', 'assets/new-symbols/heart.png');
+
+        // === LEGACY SYMBOLS (fallback) ===
         this.load.image('symbol_bar1', 'assets/Slot Machine/Bar1.png');
         this.load.image('symbol_bar2', 'assets/Slot Machine/Bar2.png');
         this.load.image('symbol_bar3', 'assets/Slot Machine/Bar3.png');
-        this.load.image('symbol_lucky7', 'assets/Slot Machine/Lucky7_rainbow.png');
-        this.load.image('symbol_bell', 'assets/Slot Machine/bell.png');
-        this.load.image('symbol_cherries', 'assets/Slot Machine/cherries.png');
-        this.load.image('symbol_clover', 'assets/Slot Machine/clover.png');
-        this.load.image('symbol_heart', 'assets/Slot Machine/heart.png');
         this.load.image('symbol_horseshoe', 'assets/Slot Machine/horseshoe.png');
         this.load.image('symbol_lemon', 'assets/Slot Machine/lemon.png');
         this.load.image('symbol_melon', 'assets/Slot Machine/melon.png');
 
         // === MACHINE FRAME & UI ===
-        this.load.image('slotFrame', 'assets/Slot Machine/Bare Bones Slot Machine Frame/SMFrame_blank.png');
+        this.load.image('slotFrame', 'assets/ui/frame.png');
         this.load.image('paylineFrame', 'assets/Slot Machine/Bare Bones Slot Machine Frame/paylineframe.png');
+
+        // === PARTICLES ===
+        this.load.image('particle_sparkle', 'assets/particles/sparkle.png');
 
         // === BUTTONS ===
         this.load.image('btnSpin', 'assets/Slot Machine/Bare Bones Slot Machine Frame/spin.png');
