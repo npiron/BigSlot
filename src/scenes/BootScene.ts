@@ -56,13 +56,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('symbol_clover', 'assets/new-symbols/clover.png');
         this.load.image('symbol_heart', 'assets/new-symbols/heart.png');
 
-        // === LEGACY SYMBOLS (fallback) ===
-        this.load.image('symbol_bar1', 'assets/Slot Machine/Bar1.png');
-        this.load.image('symbol_bar2', 'assets/Slot Machine/Bar2.png');
-        this.load.image('symbol_bar3', 'assets/Slot Machine/Bar3.png');
-        this.load.image('symbol_horseshoe', 'assets/Slot Machine/horseshoe.png');
-        this.load.image('symbol_lemon', 'assets/Slot Machine/lemon.png');
-        this.load.image('symbol_melon', 'assets/Slot Machine/melon.png');
+
 
         // === MACHINE FRAME & UI ===
         this.load.image('slotFrame', 'assets/ui/frame.png');

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { gameState } from '../systems/GameState';
-import { CONFIG } from '../data/config';
+import { gameStateManager } from '../core/state';
+import { COLORS, FONTS, UI_CONFIG } from '../shared/constants';
 
 export class MenuScene extends Phaser.Scene {
     constructor() {
@@ -11,31 +11,31 @@ export class MenuScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         // Add CRT background
-        this.cameras.main.setBackgroundColor(CONFIG.COLORS.BACKGROUND);
+        this.cameras.main.setBackgroundColor(COLORS.BACKGROUND);
 
         // Add scanline effect
         this.addScanlines();
 
         // Title with glitch effect
         const title = this.add.text(width / 2, height * 0.2, 'BIG$LOT', {
-            fontFamily: CONFIG.FONT_FAMILY,
-            fontSize: `${CONFIG.FONT_SIZE_LARGE * 1.5}px`,
-            color: CONFIG.COLORS.PRIMARY,
-            stroke: CONFIG.COLORS.SECONDARY,
+            fontFamily: FONTS.FAMILY,
+            fontSize: `${FONTS.SIZE_LARGE * 1.5}px`,
+            color: COLORS.PRIMARY,
+            stroke: COLORS.SECONDARY,
             strokeThickness: 4,
         });
         title.setOrigin(0.5);
 
         // Subtitle
         this.add.text(width / 2, height * 0.3, 'ROGUELITE SLOT MACHINE', {
-            fontFamily: CONFIG.FONT_FAMILY,
-            fontSize: `${CONFIG.FONT_SIZE_SMALL}px`,
-            color: CONFIG.COLORS.ACCENT,
+            fontFamily: FONTS.FAMILY,
+            fontSize: `${FONTS.SIZE_SMALL}px`,
+            color: COLORS.ACCENT,
         }).setOrigin(0.5);
 
         // Load save data
-        gameState.loadFromStorage();
-        const state = gameState.getState();
+        // gameStateManager loads automatically on instantiation
+        const state = gameStateManager.getState();
 
         // Stats display
         const statsY = height * 0.45;
@@ -48,9 +48,9 @@ export class MenuScene extends Phaser.Scene {
 
         statsText.forEach((text, index) => {
             this.add.text(width / 2, statsY + index * 30, text, {
-                fontFamily: CONFIG.FONT_FAMILY,
-                fontSize: `${CONFIG.FONT_SIZE_SMALL}px`,
-                color: CONFIG.COLORS.DIM,
+                fontFamily: FONTS.FAMILY,
+                fontSize: `${FONTS.SIZE_SMALL}px`,
+                color: COLORS.DIM,
             }).setOrigin(0.5);
         });
 
@@ -60,9 +60,9 @@ export class MenuScene extends Phaser.Scene {
             height * 0.7,
             '> START NEW RUN <',
             {
-                fontFamily: CONFIG.FONT_FAMILY,
-                fontSize: `${CONFIG.FONT_SIZE_MEDIUM}px`,
-                color: CONFIG.COLORS.PRIMARY,
+                fontFamily: FONTS.FAMILY,
+                fontSize: `${FONTS.SIZE_MEDIUM}px`,
+                color: COLORS.PRIMARY,
             }
         );
         startButton.setOrigin(0.5);
@@ -70,11 +70,11 @@ export class MenuScene extends Phaser.Scene {
 
         // Button hover effect
         startButton.on('pointerover', () => {
-            startButton.setColor(CONFIG.COLORS.ACCENT);
+            startButton.setColor(COLORS.ACCENT);
         });
 
         startButton.on('pointerout', () => {
-            startButton.setColor(CONFIG.COLORS.PRIMARY);
+            startButton.setColor(COLORS.PRIMARY);
         });
 
         startButton.on('pointerdown', () => {
@@ -86,7 +86,7 @@ export class MenuScene extends Phaser.Scene {
         this.time.addEvent({
             delay: 50,
             callback: () => {
-                if (Math.random() < CONFIG.CRT_FLICKER_RATE) {
+                if (Math.random() < UI_CONFIG.CRT_FLICKER_RATE) {
                     title.setAlpha(0.9);
                     this.time.delayedCall(50, () => title.setAlpha(1));
                 }
@@ -100,7 +100,7 @@ export class MenuScene extends Phaser.Scene {
         const graphics = this.add.graphics();
 
         for (let y = 0; y < height; y += 2) {
-            graphics.fillStyle(0x000000, CONFIG.CRT_SCANLINE_INTENSITY);
+            graphics.fillStyle(0x000000, UI_CONFIG.CRT_SCANLINE_INTENSITY);
             graphics.fillRect(0, y, width, 1);
         }
     }

@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { gameState } from '../systems/GameState';
-import { CONFIG } from '../data/config';
+import { gameStateManager } from '../core/state';
 
 export class UIScene extends Phaser.Scene {
     private coinsText!: Phaser.GameObjects.Text;
@@ -60,7 +59,7 @@ export class UIScene extends Phaser.Scene {
     }
 
     private updateUI(): void {
-        const state = gameState.getState();
+        const state = gameStateManager.getState();
 
         this.coinsText.setText(`💰 ${state.coins}`);
         this.gemsText?.setText(`♦ ${state.gems}`);
