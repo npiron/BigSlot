@@ -3,13 +3,13 @@ import { gameState } from '../systems/GameState';
 import { SlotMachine } from '../systems/SlotMachine';
 import { CONFIG } from '../data/config';
 import { SYMBOLS } from '../data/symbols';
-import { SymbolType } from '../types';
 
 export class SlotScene extends Phaser.Scene {
     private slotMachine!: SlotMachine;
-    private reelDisplays: Phaser.GameObjects.Container[] = [];
+    private reelContainers: Phaser.GameObjects.Container[] = [];
     private isSpinning = false;
-    private spinButton!: Phaser.GameObjects.Text;
+    private spinButton!: Phaser.GameObjects.Container;
+    private betButton!: Phaser.GameObjects.Container;
     private resultText!: Phaser.GameObjects.Text;
 
     constructor() {
@@ -19,60 +19,56 @@ export class SlotScene extends Phaser.Scene {
     create(): void {
         const { width, height } = this.cameras.main;
 
-        this.cameras.main.setBackgroundColor(CONFIG.COLORS.BACKGROUND);
-        this.addScanlines();
+        // Custom background image
+        const bg = this.add.image(width / 2, height / 2, 'customBackground');
+        bg.setDisplaySize(width, height);
+
+        // Optional: Add subtle overlay for better readability
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.2);
+
+        // Add ambient spotlight behind reels
+        this.createAmbientLight();
+
+        // Subtle scanlines for depth
+        this.addSubtleScanlines();
 
         this.slotMachine = new SlotMachine();
 
-        // Title
-        this.add.text(width / 2, 100, 'SLOT MACHINE', {
-            fontFamily: CONFIG.FONT_FAMILY,
-            fontSize: `${CONFIG.FONT_SIZE_MEDIUM}px`,
-            color: CONFIG.COLORS.PRIMARY,
-        }).setOrigin(0.5);
-
-        // Create slot display
+        // Create slot display with glass effect
         this.createSlotDisplay();
 
-        // Spin button
-        this.spinButton = this.add.text(width / 2, height - 150, '[ SPIN ]', {
-            fontFamily: CONFIG.FONT_FAMILY,
-            fontSize: `${CONFIG.FONT_SIZE_MEDIUM}px`,
-            color: CONFIG.COLORS.ACCENT,
-            stroke: CONFIG.COLORS.BACKGROUND,
-            strokeThickness: 4,
-        });
-        this.spinButton.setOrigin(0.5);
-        this.spinButton.setInteractive({ useHandCursor: true });
-
-        this.spinButton.on('pointerover', () => {
-            if (!this.isSpinning) {
-                this.spinButton.setColor(CONFIG.COLORS.PRIMARY);
-                this.spinButton.setScale(1.1);
-            }
-        });
-
-        this.spinButton.on('pointerout', () => {
-            this.spinButton.setColor(CONFIG.COLORS.ACCENT);
-            this.spinButton.setScale(1);
-        });
-
-        this.spinButton.on('pointerdown', () => {
-            this.handleSpin();
-        });
+        // Create modern buttons
+        this.createModernButtons();
 
         // Result text
-        this.resultText = this.add.text(width / 2, height - 80, '', {
-            fontFamily: CONFIG.FONT_FAMILY,
-            fontSize: `${CONFIG.FONT_SIZE_SMALL}px`,
-            color: CONFIG.COLORS.ACCENT,
+        this.resultText = this.add.text(width / 2, height / 2 + 200, '', {
+            fontFamily: 'monospace',
+            fontSize: '20px',
+            color: '#00ff88',
+            stroke: '#000000',
+            strokeThickness: 4,
         });
         this.resultText.setOrigin(0.5);
 
-        // Space bar to spin
+        // Input
         this.input.keyboard?.on('keydown-SPACE', () => {
             this.handleSpin();
         });
+    }
+
+    private createAmbientLight(): void {
+        const { width, height } = this.cameras.main;
+
+        // Spotlight behind reel area
+        const spotlight = this.add.graphics();
+        const centerX = width / 2;
+        const centerY = height / 2 - 20;
+
+        for (let i = 0; i < 15; i++) {
+            const alpha = (15 - i) / 100;
+            spotlight.fillStyle(0xffffff, alpha);
+            spotlight.fillEllipse(centerX, centerY, 300 + i * 15, 280 + i * 15);
+        }
     }
 
     private createSlotDisplay(): void {
@@ -81,54 +77,167 @@ export class SlotScene extends Phaser.Scene {
         const { rows, cols } = state.slotConfig;
 
         const cellSize = 100;
-        const totalWidth = cols * cellSize;
-        const totalHeight = rows * cellSize;
+        const spacing = 12;
+        const totalWidth = cols * (cellSize + spacing) - spacing;
+        const totalHeight = rows * (cellSize + spacing) - spacing;
         const startX = width / 2 - totalWidth / 2;
-        const startY = height / 2 - totalHeight / 2;
+        const startY = height / 2 - totalHeight / 2 - 20;
 
         // Clear previous displays
-        this.reelDisplays.forEach(container => container.destroy());
-        this.reelDisplays = [];
+        this.reelContainers.forEach(container => container.destroy());
+        this.reelContainers = [];
 
-        // Create slot machine frame
-        const graphics = this.add.graphics();
-        graphics.lineStyle(4, parseInt(CONFIG.COLORS.PRIMARY.replace('#', '0x')), 1);
-        graphics.strokeRect(
-            startX - 10,
-            startY - 10,
-            totalWidth + 20,
-            totalHeight + 20
+        // Create reel containers
+        for (let col = 0; col < cols; col++) {
+            const reelContainer = this.add.container(0, 0);
+
+            for (let row = 0; row < rows; row++) {
+                const x = startX + col * (cellSize + spacing) + cellSize / 2;
+                const y = startY + row * (cellSize + spacing) + cellSize / 2;
+
+                // Glass cell background
+                const cellBg = this.add.rectangle(x, y, cellSize, cellSize, 0x14142880);
+
+                // Neon border with glow
+                const border = this.add.rectangle(x, y, cellSize, cellSize);
+                border.setStrokeStyle(2, 0x00d9ff, 0.6);
+                border.isFilled = false;
+
+                // Add subtle glow effect
+                const glow = this.add.rectangle(x, y, cellSize + 4, cellSize + 4);
+                glow.setStrokeStyle(6, 0x00d9ff, 0.2);
+                glow.isFilled = false;
+
+                // Symbol sprite
+                const symbolSprite = this.add.image(x, y, 'symbol_cherries');
+                symbolSprite.setDisplaySize(cellSize - 15, cellSize - 15);
+                symbolSprite.setData('col', col);
+                symbolSprite.setData('row', row);
+
+                reelContainer.add([glow, cellBg, border, symbolSprite]);
+            }
+
+            this.reelContainers.push(reelContainer);
+        }
+    }
+
+    private createModernButtons(): void {
+        const { width, height } = this.cameras.main;
+
+        // SPIN button (right side)
+        this.spinButton = this.createGlassButton(
+            width / 2 + 250,
+            height / 2,
+            'btnSpin',
+            0x00ff88,
+            () => this.handleSpin()
         );
 
-        // Create grid
-        for (let col = 0; col < cols; col++) {
-            for (let row = 0; row < rows; row++) {
-                const x = startX + col * cellSize + cellSize / 2;
-                const y = startY + row * cellSize + cellSize / 2;
+        // BET button (left side)
+        this.betButton = this.createGlassButton(
+            width / 2 - 250,
+            height / 2,
+            'btnBet',
+            0xffa500,
+            () => this.adjustBet(1)
+        );
 
-                // Cell background
-                const cell = this.add.rectangle(x, y, cellSize - 10, cellSize - 10, 0x001122, 0.5);
-                cell.setStrokeStyle(2, parseInt(CONFIG.COLORS.DIM.replace('#', '0x')));
+        // Add idle breathing animation
+        this.tweens.add({
+            targets: [this.spinButton, this.betButton],
+            alpha: { from: 0.9, to: 1 },
+            duration: 2000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
+    }
 
-                // Symbol container
-                const container = this.add.container(x, y);
+    private createGlassButton(
+        x: number,
+        y: number,
+        iconKey: string,
+        glowColor: number,
+        onClick: () => void
+    ): Phaser.GameObjects.Container {
+        const container = this.add.container(x, y);
 
-                // Symbol text (will be updated during spin)
-                const symbolText = this.add.text(0, 0, '?', {
-                    fontFamily: CONFIG.FONT_FAMILY,
-                    fontSize: '48px',
-                    color: CONFIG.COLORS.TEXT,
+        // Outer glow
+        const outerGlow = this.add.circle(0, 0, 50, glowColor, 0.1);
+
+        // Glass background
+        const bg = this.add.circle(0, 0, 42, 0xffffff, 0.05);
+
+        // Border
+        const border = this.add.circle(0, 0, 42);
+        border.setStrokeStyle(2, glowColor, 0.6);
+        border.isFilled = false;
+
+        // Icon
+        const icon = this.add.image(0, 0, iconKey);
+        icon.setScale(3.5);
+
+        container.add([outerGlow, bg, border, icon]);
+        container.setSize(84, 84);
+        container.setInteractive({ useHandCursor: true });
+
+        // Hover effect
+        container.on('pointerover', () => {
+            if (!this.isSpinning) {
+                this.tweens.add({
+                    targets: container,
+                    scale: 1.1,
+                    duration: 200,
+                    ease: 'Back.easeOut',
                 });
-                symbolText.setOrigin(0.5);
-
-                container.add(symbolText);
-
-                if (!this.reelDisplays[col]) {
-                    this.reelDisplays[col] = this.add.container(0, 0);
-                }
-                this.reelDisplays[col].add(container);
+                outerGlow.setAlpha(0.3);
             }
-        }
+        });
+
+        container.on('pointerout', () => {
+            this.tweens.add({
+                targets: container,
+                scale: 1,
+                duration: 200,
+                ease: 'Back.easeIn',
+            });
+            outerGlow.setAlpha(0.1);
+        });
+
+        container.on('pointerdown', () => {
+            if (!this.isSpinning) {
+                icon.setTexture(iconKey + '_pressed');
+                this.tweens.add({
+                    targets: container,
+                    scale: 0.95,
+                    duration: 100,
+                });
+                this.sound.play('buttonClick');
+            }
+        });
+
+        container.on('pointerup', () => {
+            icon.setTexture(iconKey);
+            this.tweens.add({
+                targets: container,
+                scale: 1.1,
+                duration: 100,
+            });
+            onClick();
+        });
+
+        return container;
+    }
+
+    private adjustBet(direction: number): void {
+        const state = gameState.getState();
+        const betOptions = [5, 10, 25, 50, 100];
+        const currentIndex = betOptions.indexOf(state.slotConfig.spinCost);
+        const newIndex = Math.max(0, Math.min(betOptions.length - 1, currentIndex + direction));
+
+        state.slotConfig.spinCost = betOptions[newIndex];
+        this.sound.play('betClick');
+        this.scene.get('UIScene').events.emit('update');
     }
 
     private handleSpin(): void {
@@ -136,57 +245,68 @@ export class SlotScene extends Phaser.Scene {
 
         const state = gameState.getState();
 
-        // Check if player has enough coins and spins
         if (!gameState.spendCoins(state.slotConfig.spinCost)) {
             this.resultText.setText('NOT ENOUGH COINS!');
-            this.resultText.setColor(CONFIG.COLORS.SECONDARY);
+            this.resultText.setColor('#ff4757');
+            this.sound.play('buttonClick');
             return;
         }
 
         if (!gameState.consumeSpin()) {
             this.resultText.setText('NO SPINS REMAINING!');
-            this.resultText.setColor(CONFIG.COLORS.SECONDARY);
+            this.resultText.setColor('#ff4757');
+            this.sound.play('buttonClick');
             return;
         }
 
         this.isSpinning = true;
-        this.spinButton.setAlpha(0.5);
+        this.spinButton.setAlpha(0.4);
+        this.betButton.setAlpha(0.4);
         this.resultText.setText('');
 
-        // Animate spin
+        this.sound.play('spinStart');
         this.animateSpin();
     }
 
     private animateSpin(): void {
         const state = gameState.getState();
-        const { cols } = state.slotConfig;
+        const { rows, cols } = state.slotConfig;
 
-        // Start spinning animation
-        this.reelDisplays.forEach((reel, col) => {
+        this.reelContainers.forEach((reel, col) => {
+            const symbols = reel.getAll().filter(s => s instanceof Phaser.GameObjects.Image) as Phaser.GameObjects.Image[];
             const delay = col * 100;
 
-            // Rapid symbol changes
-            const spinEvent = this.time.addEvent({
-                delay: 50,
-                callback: () => {
-                    reel.iterate((child: Phaser.GameObjects.GameObject) => {
-                        if (child instanceof Phaser.GameObjects.Container) {
-                            const text = child.first as Phaser.GameObjects.Text;
-                            const randomSymbol = this.getRandomSymbolChar();
-                            text.setText(randomSymbol.char);
-                            text.setColor(randomSymbol.color);
+            const spinTween = this.tweens.add({
+                targets: symbols,
+                y: '+=30',
+                duration: 50,
+                repeat: 15 + col * 3,
+                ease: 'Linear',
+                onRepeat: () => {
+                    symbols.forEach((sprite) => {
+                        if (sprite.texture.key.startsWith('symbol_')) {
+                            sprite.setTexture(this.getRandomSymbolKey());
                         }
                     });
                 },
-                repeat: 20 + col * 5,
+                delay: delay,
             });
 
-            // Stop spinning after delay
-            this.time.delayedCall(1000 + delay, () => {
-                spinEvent.remove();
+            this.time.delayedCall(1000 + delay * 2, () => {
+                spinTween.remove();
 
-                // Check if all reels stopped
+                symbols.forEach((sprite) => {
+                    const row = sprite.getData('row');
+                    const { height } = this.cameras.main;
+                    const cellSize = 100;
+                    const spacing = 12;
+                    const totalHeight = rows * (cellSize + spacing) - spacing;
+                    const startY = height / 2 - totalHeight / 2 - 20;
+                    sprite.y = startY + row * (cellSize + spacing) + cellSize / 2;
+                });
+
                 if (col === cols - 1) {
+                    this.sound.play('spinStop');
                     this.finalizeSpin();
                 }
             });
@@ -194,115 +314,117 @@ export class SlotScene extends Phaser.Scene {
     }
 
     private finalizeSpin(): void {
-        // Get actual spin results
         const reels = this.slotMachine.spin();
 
-        // Display results
         reels.forEach((reel, col) => {
+            const reelContainer = this.reelContainers[col];
+            const sprites = reelContainer.getAll().filter(s => s instanceof Phaser.GameObjects.Image) as Phaser.GameObjects.Image[];
+
             reel.forEach((symbolType, row) => {
-                const container = this.reelDisplays[col].getAt(row) as Phaser.GameObjects.Container;
-                const text = container.first as Phaser.GameObjects.Text;
-                const symbol = SYMBOLS[symbolType];
+                const sprite = sprites.find(s => s.getData('col') === col && s.getData('row') === row);
+                if (sprite) {
+                    const symbol = SYMBOLS[symbolType];
+                    sprite.setTexture(symbol.char);
 
-                text.setText(symbol.char);
-                text.setColor(symbol.color);
-
-                // Flash effect
-                this.tweens.add({
-                    targets: text,
-                    scale: { from: 1.5, to: 1 },
-                    duration: 200,
-                    ease: 'Back.easeOut',
-                });
+                    // Elastic bounce effect
+                    this.tweens.add({
+                        targets: sprite,
+                        scaleX: { from: 1.3, to: 1 },
+                        scaleY: { from: 1.3, to: 1 },
+                        duration: 300,
+                        ease: 'Elastic.easeOut',
+                    });
+                }
             });
         });
 
-        // Calculate wins
         this.time.delayedCall(500, () => {
             const wins = this.slotMachine.calculateWins();
-
             let totalPayout = 0;
+
             wins.forEach(win => {
                 totalPayout += win.payout;
 
-                // Highlight winning symbols
                 win.positions.forEach(([col, row]) => {
-                    const container = this.reelDisplays[col].getAt(row) as Phaser.GameObjects.Container;
-                    const text = container.first as Phaser.GameObjects.Text;
+                    const reelContainer = this.reelContainers[col];
+                    const sprites = reelContainer.getAll().filter(s => s instanceof Phaser.GameObjects.Image) as Phaser.GameObjects.Image[];
+                    const sprite = sprites.find(s => s.getData('col') === col && s.getData('row') === row);
 
-                    this.tweens.add({
-                        targets: text,
-                        scale: { from: 1, to: 1.2 },
-                        alpha: { from: 1, to: 0.7 },
-                        duration: 300,
-                        yoyo: true,
-                        repeat: 3,
-                    });
+                    if (sprite) {
+                        // Pulsing glow on winning symbols
+                        this.tweens.add({
+                            targets: sprite,
+                            scale: { from: 1, to: 1.2 },
+                            alpha: { from: 1, to: 0.8 },
+                            duration: 400,
+                            yoyo: true,
+                            repeat: 3,
+                        });
+                    }
                 });
             });
 
             if (totalPayout > 0) {
                 gameState.addCoins(totalPayout);
-                this.resultText.setText(`WIN! +${totalPayout} COINS`);
-                this.resultText.setColor(CONFIG.COLORS.PRIMARY);
+                this.resultText.setText(`WIN! +${totalPayout}`);
+                this.resultText.setColor('#00ff88');
 
-                // Check for gem drop
+                const betAmount = gameState.getState().slotConfig.spinCost;
+                if (totalPayout >= betAmount * CONFIG.BIG_WIN_MULTIPLIER) {
+                    this.sound.play('winJackpot');
+                } else if (totalPayout >= betAmount * 5) {
+                    this.sound.play('winBig');
+                } else if (totalPayout >= betAmount * 2) {
+                    this.sound.play('winMedium');
+                } else {
+                    this.sound.play('winSmall');
+                }
+
                 if (Math.random() < CONFIG.GEM_DROP_CHANCE) {
                     gameState.addGems(1);
-                    this.time.delayedCall(1000, () => {
-                        this.resultText.setText(`BONUS! +1 GEM`);
-                        this.resultText.setColor(CONFIG.COLORS.SECONDARY);
-                    });
+                    this.sound.play('coinDrop');
                 }
             } else {
-                this.resultText.setText('NO WIN');
-                this.resultText.setColor(CONFIG.COLORS.DIM);
+                this.resultText.setText('');
             }
 
             this.isSpinning = false;
             this.spinButton.setAlpha(1);
+            this.betButton.setAlpha(1);
 
-            // Check if out of spins
             const state = gameState.getState();
             if (state.spinsRemaining === 0) {
-                this.time.delayedCall(2000, () => {
-                    this.endStage();
-                });
+                this.time.delayedCall(2000, () => this.endStage());
             }
         });
     }
 
-    private getRandomSymbolChar(): { char: string; color: string } {
+    private getRandomSymbolKey(): string {
         const state = gameState.getState();
         const symbolTypes = state.unlockedSymbols;
         const randomType = symbolTypes[Math.floor(Math.random() * symbolTypes.length)];
-        const symbol = SYMBOLS[randomType];
-        return { char: symbol.char, color: symbol.color };
+        return SYMBOLS[randomType].char;
     }
 
     private endStage(): void {
-        // For now, just go to next stage
         gameState.nextStage();
         gameState.saveToStorage();
 
         const state = gameState.getState();
-
         if (state.currentStage > CONFIG.STAGES_PER_RUN) {
-            // Run complete!
             this.scene.stop('UIScene');
             this.scene.start('MenuScene');
         } else {
-            // Continue to next stage
             this.scene.restart();
         }
     }
 
-    private addScanlines(): void {
+    private addSubtleScanlines(): void {
         const { width, height } = this.cameras.main;
         const graphics = this.add.graphics();
 
-        for (let y = 0; y < height; y += 2) {
-            graphics.fillStyle(0x000000, CONFIG.CRT_SCANLINE_INTENSITY);
+        for (let y = 0; y < height; y += 4) {
+            graphics.fillStyle(0x000000, 0.05);
             graphics.fillRect(0, y, width, 1);
         }
     }
