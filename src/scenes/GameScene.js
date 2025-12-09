@@ -204,7 +204,7 @@ export default class GameScene extends Phaser.Scene {
     });
     
     // Animation de rotation
-    this.time.addEvent({
+    this.spinTimer = this.time.addEvent({
       delay: 50,
       callback: this.updateReels,
       callbackScope: this,
@@ -244,6 +244,11 @@ export default class GameScene extends Phaser.Scene {
     });
     
     if (allStopped) {
+      // Arrêter le timer
+      if (this.spinTimer) {
+        this.spinTimer.remove();
+        this.spinTimer = null;
+      }
       this.isSpinning = false;
       this.checkWin();
     }
@@ -251,18 +256,16 @@ export default class GameScene extends Phaser.Scene {
 
   alignReel(reel) {
     // Aligner les symboles sur la grille
-    const snapPositions = [0, 120, 240];
-    
     reel.symbols.forEach((symbol, index) => {
-      const targetY = index * 120;
-      symbol.y = targetY;
+      symbol.y = index * 120;
     });
   }
 
   checkWin() {
-    // Obtenir les symboles visibles (indices 1, 2, 3 = ligne du milieu)
+    // Obtenir les symboles visibles (index 1 = ligne du milieu après alignement)
     const visibleSymbols = this.reels.map(reel => {
-      const middleSymbol = reel.symbols.find(s => Math.abs(s.y - 120) < 10);
+      // Après alignement, le symbole à y=120 est celui du milieu
+      const middleSymbol = reel.symbols.find(s => s.y === 120);
       return middleSymbol ? middleSymbol.text : '';
     });
     
